@@ -39,6 +39,10 @@ class ErrorCorrectingCode {
     }
 
     public static int[] DecodeSingleError(int[] encodedData) {
+        if (encodedData.Length < 12) {
+            Array.Resize(ref encodedData, 12);
+            // Żeby kod hamminga poprawnie liczył musimy dodać (padding) zera na końcu ostatniego bajta, Array.Resize automatycznie inicjalizuje dodane pola zerami
+        }
         int[] syndrome = new int[4];
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 12; j++) {
@@ -88,7 +92,12 @@ class ErrorCorrectingCode {
     }
 
     public static int[] DecodeDoubleError(int[] encodedData) {
-        Console.WriteLine($"Wartość przekazana do DecodeDoubleError: {String.Join("", encodedData)}");
+        if (encodedData.Length < 16) {
+            Array.Resize(ref encodedData, 16);
+            // Żeby kod hamminga poprawnie liczył musimy dodać (padding) zera na końcu ostatniego bajta, Array.Resize automatycznie inicjalizuje dodane pola zerami
+        }
+
+        //Console.WriteLine($"Wartość przekazana do DecodeDoubleError: {String.Join("", encodedData)}");
         int[] syndrome = new int[8];
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 16; j++) {
@@ -112,7 +121,7 @@ class ErrorCorrectingCode {
     private static int[] FindErrorPositions(int[,] H, int[] syndrome) {
         int rows = H.GetLength(0);
         int cols = H.GetLength(1);
-        int[] errorPositions = { -1, -1 }; // Assume no errors initially
+        int[] errorPositions = { -1, -1 }; //Zakładamy, że na starcie nie ma błędów
 
         for (int i = 0; i < cols; i++) {
             for (int j = i + 1; j < cols; j++) {
@@ -132,7 +141,58 @@ class ErrorCorrectingCode {
             }
         }
 
-        return errorPositions; // Return positions of errors if found, otherwise -1, -1
+        return errorPositions; //Zwracamy pozycje błędów, w razie ich braku zwraca -1, -1
+    }
+
+    private static byte[] BitsToBytes(int[] bits) {
+        List<byte> bytes = new List<byte>();
+        for (int i = 0; i < bits.Length; i += 8) {
+            byte b = 0;
+            for (int j = 0; j < 8 && i + j < bits.Length; j++) {
+                b |= (byte)(bits[i + j] << (7 - j));
+            }
+            bytes.Add(b);
+        }
+        return bytes.ToArray();
+    }
+
+    private static int[] BytesToBits(byte[] bytes) {
+        List<int> bits = new List<int>();
+        foreach (byte b in bytes) {
+            for (int i = 7; i >= 0; i--) {
+                bits.Add((b >> i) & 1);
+            }
+        }
+        return bits.ToArray();
+    }
+
+    public static void EncodeFile(string inputFile, string outputFile, bool useDoubleError) {
+        byte[] fileData = File.ReadAllBytes(inputFile);
+        List<int> encodedData = new List<int>();
+
+        foreach (byte b in fileData) {
+            int[] dataBits = BytesToBits(new byte[] { b });
+            int[] encodedBits = useDoubleError ? EncodeDoubleError(dataBits) : EncodeSingleError(dataBits);
+            encodedData.AddRange(encodedBits);
+        }
+
+        byte[] encodedBytes = BitsToBytes(encodedData.ToArray());
+        File.WriteAllBytes(outputFile, encodedBytes);
+    }
+
+    public static void DecodeFile(string inputFile, string outputFile, bool useDoubleError) {
+        byte[] fileData = File.ReadAllBytes(inputFile);
+        List<int> decodedData = new List<int>();
+
+        int[] bits = BytesToBits(fileData);
+        for (int i = 0; i < bits.Length; i += useDoubleError ? 16 : 12) {
+            int[] encodedBits = bits.Skip(i).Take(useDoubleError ? 16 : 12).ToArray();
+            int[] decodedBits = useDoubleError ? DecodeDoubleError(encodedBits) : DecodeSingleError(encodedBits);
+            decodedData.AddRange(decodedBits);
+        }
+
+        byte[] decodedBytes = BitsToBytes(decodedData.ToArray());
+        File.WriteAllBytes(outputFile, decodedBytes);
     }
 
     public static void TestErrorCorrection(int[] data, bool isDoubleError) {
@@ -142,7 +202,7 @@ class ErrorCorrectingCode {
         if (isDoubleError) {
             encodedData = EncodeDoubleError(data);
 
-            // Introduce two bit errors
+            //Symulacja dwóch błędów
             Console.WriteLine("Podaj metode wprowadzania bledu:\n1. Losowa\n2. Wprowadz sam ");
             string input = Console.ReadLine();
 
@@ -185,7 +245,7 @@ class ErrorCorrectingCode {
         } else {
             encodedData = EncodeSingleError(data);
 
-            // Introduce a single bit error
+            // Symulacja jednego błędu
             Random random = new Random();
             int errorPosition = random.Next(16);
             encodedData[errorPosition] ^= 1;
@@ -201,10 +261,24 @@ class ErrorCorrectingCode {
 
 class Program {
     static void Main() {
-        // Sample 8-bit message
+        // Testowa 8-bitowa wiadomość jako tablica intów
         int[] message = new int[] { 1, 0, 0, 1, 1, 0, 1, 0 };
 
-        ErrorCorrectingCode.TestErrorCorrection(message, true);
+        //ErrorCorrectingCode.TestErrorCorrection(message, true);
+
+        string originalFile = "Crab Rave.mp3";
+        string encodedFileSignleError = "Crab Rave SE.ec";
+        string decodedFileSignleError = "Crab Rave SE.mp3";
+        string encodedFileDoubleError = "Crab Rave DE.ec";
+        string decodedFileDoubleError = "Crab Rave DE.mp3";
+
+        // For single error correction
+        ErrorCorrectingCode.EncodeFile(originalFile, encodedFileSignleError, false);
+        ErrorCorrectingCode.DecodeFile(encodedFileSignleError, decodedFileSignleError, false);
+        
+        // For double error correction
+        ErrorCorrectingCode.EncodeFile(originalFile, encodedFileDoubleError, true);
+        ErrorCorrectingCode.DecodeFile(encodedFileDoubleError, decodedFileDoubleError, true);
     }
 }
 
