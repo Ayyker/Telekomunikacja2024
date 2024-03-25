@@ -265,19 +265,25 @@ class Program {
         int[] message = new int[] { 1, 0, 0, 1, 1, 0, 1, 0 };
 
         //ErrorCorrectingCode.TestErrorCorrection(message, true);
-
+/*
         string originalFile = "Crab Rave.mp3";
         string encodedFileSignleError = "Crab Rave SE.ec";
         string decodedFileSignleError = "Crab Rave SE.mp3";
         string encodedFileDoubleError = "Crab Rave DE.ec";
-        string decodedFileDoubleError = "Crab Rave DE.mp3";
+        string decodedFileDoubleError = "Crab Rave DE.mp3";*/
+
+        string originalFile = "test.png";
+        string encodedFileSignleError = "test SE.ec";
+        string decodedFileSignleError = "test SE.png";
+        string encodedFileDoubleError = "test DE.ec";
+        string decodedFileDoubleError = "test DE.png";
 
         // For single error correction
-        ErrorCorrectingCode.EncodeFile(originalFile, encodedFileSignleError, false);
+        //ErrorCorrectingCode.EncodeFile(originalFile, encodedFileSignleError, false);
         ErrorCorrectingCode.DecodeFile(encodedFileSignleError, decodedFileSignleError, false);
         
         // For double error correction
-        ErrorCorrectingCode.EncodeFile(originalFile, encodedFileDoubleError, true);
+        //ErrorCorrectingCode.EncodeFile(originalFile, encodedFileDoubleError, true);
         ErrorCorrectingCode.DecodeFile(encodedFileDoubleError, decodedFileDoubleError, true);
     }
 }
