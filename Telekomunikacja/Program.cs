@@ -220,12 +220,12 @@ class ErrorCorrectingCode {
                 } else if (choice == 2) {
                     Console.WriteLine("Wprowadź pierwszą pozycję błędu:");
                     while (!int.TryParse(Console.ReadLine(), out errorPosition1) || errorPosition1 < 0 || errorPosition1 > 15) {
-                        Console.WriteLine("Nieprawidłowa wartość, wprowadź liczbę od 0 do 7:");
+                        Console.WriteLine("Nieprawidłowa wartość, wprowadź liczbę od 0 do 15:");
                     }
 
                     Console.WriteLine("Wprowadź drugą pozycję błędu:");
                     while (!int.TryParse(Console.ReadLine(), out errorPosition2) || errorPosition2 < 0 || errorPosition2 > 15 || errorPosition2 == errorPosition1) {
-                        Console.WriteLine("Nieprawidłowa wartość lub taka sama jak pierwsza pozycja, wprowadź inną liczbę od 0 do 7:");
+                        Console.WriteLine("Nieprawidłowa wartość lub taka sama jak pierwsza pozycja, wprowadź inną liczbę od 0 do 15:");
                     }
                 } else {
                     Console.WriteLine("Nieprawidłowy wybór");
@@ -245,46 +245,82 @@ class ErrorCorrectingCode {
         } else {
             encodedData = EncodeSingleError(data);
 
+            Console.WriteLine("Podaj metode wprowadzania bledu:\n1. Losowa\n2. Wprowadz sam ");
+            int choice;
+            string input = Console.ReadLine();
+            int errorPosition = -1;
+            if (int.TryParse(input, out choice)) {
+                if (choice == 1) {
+                    Random random = new Random();
+                    errorPosition = random.Next(8);
+
+                } else if (choice == 2) {
+                    Console.WriteLine("Wprowadź pozycję błędu:");
+                    while (!int.TryParse(Console.ReadLine(), out errorPosition) || errorPosition < 0 || errorPosition > 11) {
+                        Console.WriteLine("Nieprawidłowa wartość, wprowadź liczbę od 0 do 11:");
+                    }
+                } else {
+                    Console.WriteLine("Nieprawidłowy wybór");
+                }
+            } else {
+                Console.WriteLine("Proszę podać liczbę");
+            }
+
             // Symulacja jednego błędu
-            Random random = new Random();
-            int errorPosition = random.Next(16);
             encodedData[errorPosition] ^= 1;
 
             decodedData = DecodeSingleError(encodedData);
         }
 
-        Console.WriteLine($"Original: {String.Join("", data)}");
-        Console.WriteLine($"Encoded: {String.Join("", encodedData)}");
-        Console.WriteLine($"Decoded: {String.Join("", decodedData)}");
+        Console.WriteLine($"Oryginalna wiadomość: {String.Join("", data)}");
+        Console.WriteLine($"Zakodowana: {String.Join("", encodedData)}");
+        Console.WriteLine($"Zdekodowana: {String.Join("", decodedData)}");
     }
 }
 
 class Program {
     static void Main() {
+
         // Testowa 8-bitowa wiadomość jako tablica intów
         int[] message = new int[] { 1, 0, 0, 1, 1, 0, 1, 0 };
 
-        //ErrorCorrectingCode.TestErrorCorrection(message, true);
-/*
-        string originalFile = "Crab Rave.mp3";
-        string encodedFileSignleError = "Crab Rave SE.ec";
-        string decodedFileSignleError = "Crab Rave SE.mp3";
-        string encodedFileDoubleError = "Crab Rave DE.ec";
-        string decodedFileDoubleError = "Crab Rave DE.mp3";*/
+        Console.WriteLine("Wybierz co chcesz zrobić: \n1. Zakoduj plik\n2. Dekoduj plik z korekcją błędów\n3. Funkcja testowa dla pojedynczego słowa");
+        string input = Console.ReadLine();
+        char choice1 = input.Length > 0 ? input[0] : '\0'; //Czytaj tylko pierwszy znak
 
-        string originalFile = "test.png";
-        string encodedFileSignleError = "test SE.ec";
-        string decodedFileSignleError = "test SE.png";
-        string encodedFileDoubleError = "test DE.ec";
-        string decodedFileDoubleError = "test DE.png";
-
-        // For single error correction
-        //ErrorCorrectingCode.EncodeFile(originalFile, encodedFileSignleError, false);
-        ErrorCorrectingCode.DecodeFile(encodedFileSignleError, decodedFileSignleError, false);
-        
-        // For double error correction
-        //ErrorCorrectingCode.EncodeFile(originalFile, encodedFileDoubleError, true);
-        ErrorCorrectingCode.DecodeFile(encodedFileDoubleError, decodedFileDoubleError, true);
+        if (choice1 == '1') {
+            Console.WriteLine("Podaj ścieżkę do oryginalnego pliku: ");
+            string filePath = Console.ReadLine();
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string encodedFileSingleError = $"{fileNameWithoutExtension} SE.ec";
+            string encodedFileDoubleError = $"{fileNameWithoutExtension} DE.ec";
+            ErrorCorrectingCode.EncodeFile(filePath, encodedFileSingleError, false);
+            ErrorCorrectingCode.EncodeFile(filePath, encodedFileDoubleError, true);
+        } else if (choice1 == '2') {
+            Console.WriteLine("Podaj ścieżkę do oryginalnego pliku: ");
+            string filePath = Console.ReadLine();
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string fileExtension = Path.GetExtension(filePath);
+            string encodedFileSingleError = $"{fileNameWithoutExtension} SE.ec";
+            string encodedFileDoubleError = $"{fileNameWithoutExtension} DE.ec";
+            string decodedFileSingleError = $"{fileNameWithoutExtension} SE{fileExtension}";
+            string decodedFileDoubleError = $"{fileNameWithoutExtension} DE{fileExtension}";
+            ErrorCorrectingCode.DecodeFile(encodedFileSingleError, decodedFileSingleError, false);
+            ErrorCorrectingCode.DecodeFile(encodedFileDoubleError, decodedFileDoubleError, true);
+        } else if (choice1 == '3') {
+            Console.WriteLine("Wybierz jaki typ błędu:\n1. Pojedynczy\n2. Podwójny");
+            string input2 = Console.ReadLine();
+            char choice2 = input2.Length > 0 ? input2[0] : '\0'; //Czytaj tylko pierwszy znak
+            if (choice2 == '1') {
+                ErrorCorrectingCode.TestErrorCorrection(message, false);
+            } else if (choice2 == '2') {
+                ErrorCorrectingCode.TestErrorCorrection(message, true);
+            } else {
+                Console.WriteLine("Nieprawidłowy wybór!");
+            }
+        } else { 
+            Console.WriteLine("Nieprawidłowy wybór!");
+        }        
     }
 }
 
